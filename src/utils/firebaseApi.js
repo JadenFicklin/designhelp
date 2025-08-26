@@ -432,6 +432,123 @@ export const flashcardsApi = {
       console.error('Error grading flashcard:', error);
       throw error;
     }
+  },
+
+  // Get flashcard progress for an item
+  getProgress: async (itemId) => {
+    try {
+      const snapshot = await get(ref(database, flashcardsRef()));
+      const grades = snapshotToArray(snapshot);
+      const itemGrades = grades.filter(grade => grade.itemId === itemId);
+      
+      return {
+        itemId,
+        grades: itemGrades,
+        totalReviews: itemGrades.length,
+        again: itemGrades.filter(g => g.grade === 'again').length,
+        good: itemGrades.filter(g => g.grade === 'good').length,
+        easy: itemGrades.filter(g => g.grade === 'easy').length,
+        lastSeen: itemGrades.length > 0 ? Math.max(...itemGrades.map(g => new Date(g.createdAt))) : null
+      };
+    } catch (error) {
+      console.error('Error fetching flashcard progress:', error);
+      throw error;
+    }
+  },
+
+  // Get all flashcard progress
+  getAllProgress: async () => {
+    try {
+      const snapshot = await get(ref(database, flashcardsRef()));
+      const grades = snapshotToArray(snapshot);
+      
+      // Group by itemId
+      const progressByItem = grades.reduce((acc, grade) => {
+        if (!acc[grade.itemId]) {
+          acc[grade.itemId] = {
+            itemId: grade.itemId,
+            grades: [],
+            totalReviews: 0,
+            again: 0,
+            good: 0,
+            easy: 0,
+            lastSeen: null
+          };
+        }
+        
+        acc[grade.itemId].grades.push(grade);
+        acc[grade.itemId].totalReviews++;
+        acc[grade.itemId][grade.grade]++;
+        
+        const gradeDate = new Date(grade.createdAt);
+        if (!acc[grade.itemId].lastSeen || gradeDate > new Date(acc[grade.itemId].lastSeen)) {
+          acc[grade.itemId].lastSeen = grade.createdAt;
+        }
+        
+        return acc;
+      }, {});
+      
+      return Object.values(progressByItem);
+    } catch (error) {
+      console.error('Error fetching all flashcard progress:', error);
+      throw error;
+    }
+  },
+
+  // Get study statistics
+  getStats: async () => {
+    try {
+      const snapshot = await get(ref(database, flashcardsRef()));
+      const grades = snapshotToArray(snapshot);
+      
+      const stats = {
+        totalGrades: grades.length,
+        again: grades.filter(g => g.grade === 'again').length,
+        good: grades.filter(g => g.grade === 'good').length,
+        easy: grades.filter(g => g.grade === 'easy').length,
+        uniqueItems: new Set(grades.map(g => g.itemId)).size,
+        averageAccuracy: grades.length > 0 
+          ? Math.round(((grades.filter(g => g.grade === 'good' || g.grade === 'easy').length) / grades.length) * 100)
+          : 0
+      };
+      
+      return stats;
+    } catch (error) {
+      console.error('Error fetching flashcard stats:', error);
+      throw error;
+    }
+  },
+
+  // Get items due for review (spaced repetition)
+  getDueItems: async () => {
+    try {
+      const progress = await flashcardsApi.getAllProgress();
+      const now = new Date();
+      
+      // Simple spaced repetition algorithm
+      const dueItems = progress.filter(item => {
+        if (!item.lastSeen) return true; // New items
+        
+        const lastSeen = new Date(item.lastSeen);
+        const daysSinceLastSeen = (now - lastSeen) / (1000 * 60 * 60 * 24);
+        
+        // Calculate interval based on performance
+        const accuracy = item.totalReviews > 0 ? (item.good + item.easy) / item.totalReviews : 0;
+        let interval = 1; // Default 1 day
+        
+        if (accuracy > 0.8) interval = 7; // Good performance: 1 week
+        else if (accuracy > 0.6) interval = 3; // Moderate: 3 days
+        else if (accuracy > 0.4) interval = 2; // Poor: 2 days
+        // Very poor: 1 day (default)
+        
+        return daysSinceLastSeen >= interval;
+      });
+      
+      return dueItems.map(item => item.itemId);
+    } catch (error) {
+      console.error('Error fetching due items:', error);
+      throw error;
+    }
   }
 };
 

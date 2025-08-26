@@ -56,7 +56,6 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
     try {
       // Validate JSON fields first
       let dimensions = {};
-      let attributes = {};
       
       try {
         dimensions = parseJsonField(data.dimensions, 'Dimensions');
@@ -66,24 +65,14 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
         setIsSubmitting(false);
         return;
       }
-      
-      try {
-        attributes = parseJsonField(data.attributes, 'Attributes');
-      } catch (error) {
-        closeAlert();
-        showError('Invalid Attributes', error.message);
-        setIsSubmitting(false);
-        return;
-      }
 
       // Process form data
       const processedData = {
         ...data,
-        cost: data.cost ? parseFloat(data.cost) : null,
+        cost: data.cost ? (isNaN(parseFloat(data.cost)) ? null : parseFloat(data.cost)) : null,
         categories: Array.isArray(data.categories) ? data.categories : [data.categories].filter(Boolean),
         tags: data.tags ? data.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
         dimensions,
-        attributes,
         assets: uploadedImages
       };
 
@@ -219,35 +208,18 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
         </div>
 
         {/* Cost Information */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Cost
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              {...register('cost')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="0.00"
-              disabled={isSubmitting}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Currency
-            </label>
-            <select
-              {...register('currency')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={isSubmitting}
-            >
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="GBP">GBP</option>
-              <option value="CAD">CAD</option>
-            </select>
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Cost (USD)
+          </label>
+          <input
+            type="number"
+            step="0.01"
+            {...register('cost')}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="0.00"
+            disabled={isSubmitting}
+          />
         </div>
 
         {/* Categories */}
@@ -300,22 +272,7 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
           </p>
         </div>
 
-        {/* Attributes */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Attributes (JSON) - Optional
-          </label>
-          <textarea
-            {...register('attributes')}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder='{"color": "white", "material": "wood"} or leave empty'
-            disabled={isSubmitting}
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Enter valid JSON or leave empty. Example: &#123;"color": "white", "material": "wood"&#125;
-          </p>
-        </div>
+
 
         {/* Form Actions */}
         <div className="flex space-x-2 pt-4">

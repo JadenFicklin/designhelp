@@ -37,9 +37,6 @@ export const itemsApi = {
       const snapshot = await get(ref(database, itemsRef()));
       let items = snapshotToArray(snapshot);
       
-      console.log('Initial items:', items);
-      console.log('Applied filters:', filters);
-      
       // Apply filters in combination
       if (filters.query) {
         items = items.filter(item => 
@@ -47,16 +44,12 @@ export const itemsApi = {
           item.description?.toLowerCase().includes(filters.query.toLowerCase()) ||
           item.tags?.some(tag => tag.toLowerCase().includes(filters.query.toLowerCase()))
         );
-        console.log('After query filter:', items);
       }
       
-      if (filters.category) {
-        items = items.filter(item => {
-          const hasCategory = item.categories?.includes(filters.category);
-          console.log(`Item ${item.name} categories:`, item.categories, 'Looking for:', filters.category, 'Has category:', hasCategory);
-          return hasCategory;
-        });
-        console.log('After category filter:', items);
+      if (filters.category && filters.category !== 'global') {
+        items = items.filter(item => 
+          item.categories?.includes(filters.category)
+        );
       }
       
       if (filters.tags) {
@@ -64,7 +57,6 @@ export const itemsApi = {
         items = items.filter(item => 
           item.tags?.some(tag => selectedTags.includes(tag))
         );
-        console.log('After tags filter:', items);
       }
       
       return items;
@@ -187,9 +179,7 @@ export const itemsApi = {
         kind: "material",
         description: "Rift-sawn white oak with clear finish",
         dimensions: { thickness: 0.75, unit: "in" },
-        attributes: { species: "white oak", finish: "clear", grade: "select" },
         cost: 85,
-        currency: "USD",
         categories: ["cabinetry", "doors"],
         tags: ["white-oak", "shaker"],
         assets: [
@@ -205,9 +195,7 @@ export const itemsApi = {
         kind: "material",
         description: "Calacatta pattern quartz slab",
         dimensions: { thickness: 1.25, unit: "in" },
-        attributes: { brand: "Generic", color: "white/gray" },
         cost: 55,
-        currency: "USD",
         categories: ["countertops"],
         tags: ["quartz"],
         assets: [
@@ -223,7 +211,6 @@ export const itemsApi = {
         kind: "text",
         description: "Base 34.5 in box height. 36 in to countertop. Toe kick 4 in.",
         dimensions: {},
-        attributes: {},
         categories: ["notes"],
         tags: ["dimensions"],
         assets: []

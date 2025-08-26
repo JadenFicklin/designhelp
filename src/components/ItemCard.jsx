@@ -1,14 +1,41 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { itemsApi } from '../utils/api';
+import { showConfirm } from '../utils/alerts';
 
 const ItemCard = ({ item }) => {
+  const queryClient = useQueryClient();
   const mainImage = item.assets && item.assets.length > 0 ? item.assets[0] : null;
+
+  const deleteItemMutation = useMutation({
+    mutationFn: itemsApi.deleteItem,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['items']);
+    },
+  });
+
+  const handleDelete = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const result = await showConfirm(
+      'Delete Item',
+      'Are you sure you want to delete this item? This action cannot be undone.',
+      'Delete',
+      'Cancel'
+    );
+
+    if (result.isConfirmed) {
+      await deleteItemMutation.mutateAsync(item.id);
+    }
+  };
   
-  const formatCost = (cost, currency) => {
+  const formatCost = (cost) => {
     if (cost === null || cost === undefined) return 'N/A';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency || 'USD',
+      currency: 'USD',
     }).format(cost);
   };
 
@@ -25,10 +52,22 @@ const ItemCard = ({ item }) => {
   };
 
   return (
-    <Link
-      to={`/item/${item.id}`}
-      className="block bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200"
-    >
+    <div className="relative bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+      {/* Delete Button */}
+      <button
+        onClick={handleDelete}
+        className="absolute top-2 right-2 z-10 bg-red-600 text-white p-1 rounded-full hover:bg-red-700 transition-colors opacity-0 group-hover:opacity-100"
+        title="Delete item"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      
+      <Link
+        to={`/item/${item.id}`}
+        className="block group"
+      >
       <div className="aspect-w-16 aspect-h-9 bg-gray-100 rounded-t-lg overflow-hidden">
         {mainImage ? (
           <img
@@ -60,7 +99,7 @@ const ItemCard = ({ item }) => {
         
         <div className="flex items-center justify-between mb-2">
           <span className="text-lg font-semibold text-green-600">
-            {formatCost(item.cost, item.currency)}
+            {formatCost(item.cost)}
           </span>
           <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
             {item.kind}
@@ -107,7 +146,8 @@ const ItemCard = ({ item }) => {
           </div>
         )}
       </div>
-    </Link>
+      </Link>
+    </div>
   );
 };
 

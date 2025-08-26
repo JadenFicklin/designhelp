@@ -8,15 +8,59 @@ const Tree = ({
   onAddCategory, 
   onUpdateCategory, 
   onDeleteCategory,
-  level = 0 
+  level = 0,
+  items = [] // Add items prop to count items in categories
 }) => {
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
   const [showAddForm, setShowAddForm] = useState(null);
+  const [collapsedCategories, setCollapsedCategories] = useState(new Set());
 
   if (!data || data.length === 0) {
     return null;
   }
+
+  // Helper function to count items in a category and its descendants
+  const countItemsInCategory = (categoryId) => {
+    const countDirectItems = items.filter(item => 
+      item.categories?.includes(categoryId)
+    ).length;
+    
+    // Find all descendant categories
+    const getDescendantIds = (parentId) => {
+      const descendants = [];
+      const findDescendants = (parent) => {
+        data.forEach(cat => {
+          if (cat.parentId === parent) {
+            descendants.push(cat.id);
+            findDescendants(cat.id);
+          }
+        });
+      };
+      findDescendants(parentId);
+      return descendants;
+    };
+    
+    const descendantIds = getDescendantIds(categoryId);
+    const countDescendantItems = items.filter(item => 
+      item.categories?.some(catId => descendantIds.includes(catId))
+    ).length;
+    
+    return countDirectItems + countDescendantItems;
+  };
+
+  // Helper function to toggle category collapse
+  const toggleCollapse = (categoryId) => {
+    setCollapsedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
 
   const handleEdit = (node) => {
     setEditingId(node.id);
@@ -70,44 +114,77 @@ const Tree = ({
 
   return (
     <div className="space-y-1">
-      {data.map((node) => (
-        <div key={node.id}>
+      {/* Global View Option - only show at root level */}
+      {level === 0 && (
+        <>
           <div className="flex items-center group">
             <button
-              onClick={() => onSelectCategory(node.id === selectedCategory ? null : node.id)}
+              onClick={() => onSelectCategory(selectedCategory === 'global' ? null : 'global')}
               className={`flex-1 text-left px-2 py-1 rounded text-sm transition-colors ${
-                selectedCategory === node.id
+                selectedCategory === 'global'
                   ? 'bg-blue-100 text-blue-700 font-medium'
                   : 'hover:bg-gray-100 text-gray-700'
               }`}
-              style={{ paddingLeft: `${level * 12 + 8}px` }}
+              style={{ paddingLeft: '8px' }}
             >
-              {node.children && node.children.length > 0 && (
-                <span className="mr-1 text-gray-400">▶</span>
-              )}
-              
-              {editingId === node.id ? (
-                <input
-                  type="text"
-                  value={editingName}
-                  onChange={(e) => setEditingName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSave(node);
-                    if (e.key === 'Escape') handleCancel();
-                  }}
-                  className="w-full bg-white border border-gray-300 rounded px-1 py-0.5 text-sm"
-                  autoFocus
-                />
-              ) : (
-                <span>{node.name}</span>
-              )}
-              
-              {node.children && node.children.length > 0 && (
-                <span className="ml-1 text-xs text-gray-500">
-                  ({node.children.length})
-                </span>
-              )}
+              <span>🌐 Global View</span>
             </button>
+          </div>
+          
+          {/* Divider */}
+          <div className="border-t border-gray-200 my-2"></div>
+        </>
+      )}
+      
+      {data.map((node) => (
+        <div key={node.id}>
+          <div className="flex items-center group">
+                         <div className="flex items-center">
+               {/* Collapse/Expand button for categories with children */}
+               {node.children && node.children.length > 0 && (
+                 <button
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     toggleCollapse(node.id);
+                   }}
+                   className="mr-1 text-gray-400 hover:text-gray-600 transition-colors"
+                   title={collapsedCategories.has(node.id) ? "Expand" : "Collapse"}
+                 >
+                   {collapsedCategories.has(node.id) ? "▶" : "▼"}
+                 </button>
+               )}
+               
+               <button
+                 onClick={() => onSelectCategory(node.id === selectedCategory ? null : node.id)}
+                 className={`flex-1 text-left px-2 py-1 rounded text-sm transition-colors ${
+                   selectedCategory === node.id
+                     ? 'bg-blue-100 text-blue-700 font-medium'
+                     : 'hover:bg-gray-100 text-gray-700'
+                 }`}
+                 style={{ paddingLeft: `${level * 12 + 8}px` }}
+               >
+                 {editingId === node.id ? (
+                   <input
+                     type="text"
+                     value={editingName}
+                     onChange={(e) => setEditingName(e.target.value)}
+                     onKeyDown={(e) => {
+                       if (e.key === 'Enter') handleSave(node);
+                       if (e.key === 'Escape') handleCancel();
+                     }}
+                     className="w-full bg-white border border-gray-300 rounded px-1 py-0.5 text-sm"
+                     autoFocus
+                   />
+                 ) : (
+                   <span>{node.name}</span>
+                 )}
+                 
+                 {/* Show item count instead of child count */}
+                 <span className="ml-1 text-xs text-gray-500">
+                   ({countItemsInCategory(node.id)})
+                 </span>
+               </button>
+             </div>
             
             {/* Action buttons - only show on hover */}
             <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1 ml-2">
@@ -195,18 +272,19 @@ const Tree = ({
             </div>
           )}
           
-          {/* Recursive children */}
-          {node.children && node.children.length > 0 && (
-            <Tree
-              data={node.children}
-              selectedCategory={selectedCategory}
-              onSelectCategory={onSelectCategory}
-              onAddCategory={onAddCategory}
-              onUpdateCategory={onUpdateCategory}
-              onDeleteCategory={onDeleteCategory}
-              level={level + 1}
-            />
-          )}
+                     {/* Recursive children */}
+           {node.children && node.children.length > 0 && !collapsedCategories.has(node.id) && (
+             <Tree
+               data={node.children}
+               selectedCategory={selectedCategory}
+               onSelectCategory={onSelectCategory}
+               onAddCategory={onAddCategory}
+               onUpdateCategory={onUpdateCategory}
+               onDeleteCategory={onDeleteCategory}
+               level={level + 1}
+               items={items}
+             />
+           )}
         </div>
       ))}
     </div>

@@ -5,6 +5,7 @@ import useFilters from '../store/useFilters';
 import Tree from '../components/Tree';
 import ItemCard from '../components/ItemCard';
 import CreateItemForm from '../components/CreateItemForm';
+import SpreadsheetView from '../components/SpreadsheetView';
 import { 
   showImportSuccess, 
   showExportSuccess, 
@@ -18,6 +19,7 @@ const Library = () => {
   const queryClient = useQueryClient();
   const { query, selectedCategory, selectedTags, setQuery, setSelectedCategory, getFilters } = useFilters();
   const [importFile, setImportFile] = useState(null);
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'spreadsheet'
 
   // Queries
   const { data: items = [], isLoading: itemsLoading } = useQuery({
@@ -214,6 +216,7 @@ const Library = () => {
                   onAddCategory={handleAddCategory}
                   onUpdateCategory={handleUpdateCategory}
                   onDeleteCategory={handleDeleteCategory}
+                  items={items}
                 />
               )}
             </div>
@@ -257,55 +260,84 @@ const Library = () => {
 
       {/* Main Content - Items Grid */}
       <div className="flex-1">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Library ({items.length} items)
-              </h2>
-              {(query || selectedCategory || selectedTags.length > 0) && (
-                <p className="text-sm text-gray-500 mt-1">
-                  Filtered results
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
+                 {/* Header */}
+         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+           <div className="flex items-center justify-between">
+             <div>
+               <h2 className="text-lg font-semibold text-gray-900">
+                 Library ({items.length} items)
+               </h2>
+               {(query || selectedCategory || selectedTags.length > 0) && (
+                 <p className="text-sm text-gray-500 mt-1">
+                   Filtered results
+                 </p>
+               )}
+             </div>
+             
+             {/* View Mode Toggle */}
+             <div className="flex items-center space-x-2">
+               <span className="text-sm text-gray-600">View:</span>
+               <div className="flex bg-gray-100 rounded-lg p-1">
+                 <button
+                   onClick={() => setViewMode('cards')}
+                   className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                     viewMode === 'cards'
+                       ? 'bg-white text-gray-900 shadow-sm'
+                       : 'text-gray-600 hover:text-gray-900'
+                   }`}
+                 >
+                   Cards
+                 </button>
+                 <button
+                   onClick={() => setViewMode('spreadsheet')}
+                   className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                     viewMode === 'spreadsheet'
+                       ? 'bg-white text-gray-900 shadow-sm'
+                       : 'text-gray-600 hover:text-gray-900'
+                   }`}
+                 >
+                   Spreadsheet
+                 </button>
+               </div>
+             </div>
+           </div>
+         </div>
 
-        {/* Items Grid */}
-        {itemsLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="bg-white rounded-lg shadow-sm border border-gray-200 animate-pulse">
-                <div className="h-48 bg-gray-200 rounded-t-lg"></div>
-                <div className="p-4 space-y-2">
-                  <div className="h-4 bg-gray-200 rounded"></div>
-                  <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-6 bg-gray-200 rounded w-1/2"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : items.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-            <div className="text-6xl mb-4">📚</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No items found
-            </h3>
-                         <p className="text-gray-500 mb-4">
+                 {/* Items Display */}
+         {itemsLoading ? (
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+             {[...Array(8)].map((_, i) => (
+               <div key={i} className="bg-white rounded-lg shadow-sm border border-gray-200 animate-pulse">
+                 <div className="h-48 bg-gray-200 rounded-t-lg"></div>
+                 <div className="p-4 space-y-2">
+                   <div className="h-4 bg-gray-200 rounded"></div>
+                   <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                   <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+                 </div>
+               </div>
+             ))}
+           </div>
+         ) : items.length === 0 ? (
+           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+             <div className="text-6xl mb-4">📚</div>
+             <h3 className="text-lg font-medium text-gray-900 mb-2">
+               No items found
+             </h3>
+             <p className="text-gray-500 mb-4">
                {query || selectedCategory || selectedTags.length > 0
                  ? 'Try adjusting your filters or search terms.'
                  : 'Get started by creating your first item.'}
              </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {items.map((item) => (
-              <ItemCard key={item.id} item={item} />
-            ))}
-          </div>
-        )}
+           </div>
+         ) : viewMode === 'spreadsheet' ? (
+           <SpreadsheetView items={items} categories={allCategories} />
+         ) : (
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+             {items.map((item) => (
+               <ItemCard key={item.id} item={item} />
+             ))}
+           </div>
+         )}
       </div>
     </div>
   );

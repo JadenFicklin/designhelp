@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { itemsApi } from '../utils/api';
 import { showItemUpdated, showUpdateItemError, showLoading } from '../utils/alerts';
+import ImageManagerModal from '../components/ImageManagerModal';
 
 const ItemDetail = () => {
   const { id } = useParams();
@@ -10,6 +11,7 @@ const ItemDetail = () => {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({});
+  const [imageModalOpen, setImageModalOpen] = useState(false);
 
   // Query for item data
   const { data: item, isLoading, error } = useQuery({
@@ -35,7 +37,6 @@ const ItemDetail = () => {
   const handleEdit = () => {
     setEditData({
       cost: item.cost,
-      currency: item.currency,
     });
     setEditing(true);
   };
@@ -53,11 +54,19 @@ const ItemDetail = () => {
     setEditData({});
   };
 
-  const formatCost = (cost, currency) => {
+  const handleOpenImageModal = () => {
+    setImageModalOpen(true);
+  };
+
+  const handleCloseImageModal = () => {
+    setImageModalOpen(false);
+  };
+
+  const formatCost = (cost) => {
     if (cost === null || cost === undefined) return 'N/A';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currency || 'USD',
+      currency: 'USD',
     }).format(cost);
   };
 
@@ -142,7 +151,15 @@ const ItemDetail = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Media Panel */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Media</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Media</h2>
+            <button
+              onClick={handleOpenImageModal}
+              className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+            >
+              Manage Images
+            </button>
+          </div>
           {mainImage ? (
             <img
               src={mainImage.url}
@@ -169,30 +186,16 @@ const ItemDetail = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Cost
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={editData.cost || ''}
-                  onChange={(e) => setEditData({ ...editData, cost: parseFloat(e.target.value) || null })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                                 <input
+                   type="number"
+                   step="0.01"
+                   value={editData.cost || ''}
+                   onChange={(e) => setEditData({ ...editData, cost: e.target.value === '' ? null : (isNaN(parseFloat(e.target.value)) ? null : parseFloat(e.target.value)) })}
+                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 />
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Currency
-                </label>
-                <select
-                  value={editData.currency || 'USD'}
-                  onChange={(e) => setEditData({ ...editData, currency: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GBP">GBP</option>
-                  <option value="CAD">CAD</option>
-                </select>
-              </div>
+
               
               <div className="flex space-x-2">
                 <button
@@ -215,7 +218,7 @@ const ItemDetail = () => {
               <div>
                 <span className="text-sm font-medium text-gray-700">Cost:</span>
                 <div className="text-lg font-semibold text-green-600">
-                  {formatCost(item.cost, item.currency)}
+                  {formatCost(item.cost)}
                 </div>
               </div>
               
@@ -240,13 +243,7 @@ const ItemDetail = () => {
           </pre>
         </div>
 
-        {/* Attributes Panel */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Attributes</h2>
-          <pre className="bg-gray-50 p-4 rounded-lg text-sm overflow-x-auto">
-            {JSON.stringify(item.attributes, null, 2)}
-          </pre>
-        </div>
+
 
         {/* Categories & Tags */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:col-span-2">
@@ -289,6 +286,13 @@ const ItemDetail = () => {
           </div>
         </div>
       </div>
+      
+      {/* Image Manager Modal */}
+      <ImageManagerModal
+        item={item}
+        isOpen={imageModalOpen}
+        onClose={handleCloseImageModal}
+      />
     </div>
   );
 };

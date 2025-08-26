@@ -14,12 +14,17 @@ const generateId = () => {
 
 // Helper function to convert Firebase snapshot to array
 const snapshotToArray = (snapshot) => {
+  if (!snapshot.exists()) {
+    return [];
+  }
+  
   const array = [];
   snapshot.forEach((childSnapshot) => {
-    array.push({
+    const item = {
       id: childSnapshot.key,
       ...childSnapshot.val()
-    });
+    };
+    array.push(item);
   });
   return array;
 };
@@ -29,32 +34,40 @@ export const itemsApi = {
   // Get all items with optional filters
   getItems: async (filters = {}) => {
     try {
-      let itemsQuery = ref(database, itemsRef());
+      const snapshot = await get(ref(database, itemsRef()));
+      let items = snapshotToArray(snapshot);
       
-      // Apply filters
+      console.log('Initial items:', items);
+      console.log('Applied filters:', filters);
+      
+      // Apply filters in combination
       if (filters.query) {
-        // For Firebase, we'll need to implement search differently
-        // For now, we'll get all items and filter client-side
-        const snapshot = await get(itemsQuery);
-        const items = snapshotToArray(snapshot);
-        return items.filter(item => 
+        items = items.filter(item => 
           item.name?.toLowerCase().includes(filters.query.toLowerCase()) ||
           item.description?.toLowerCase().includes(filters.query.toLowerCase()) ||
           item.tags?.some(tag => tag.toLowerCase().includes(filters.query.toLowerCase()))
         );
+        console.log('After query filter:', items);
       }
       
-      if (filters.selectedCategory) {
-        // Filter by category
-        const snapshot = await get(itemsQuery);
-        const items = snapshotToArray(snapshot);
-        return items.filter(item => 
-          item.categories?.includes(filters.selectedCategory)
+      if (filters.category) {
+        items = items.filter(item => {
+          const hasCategory = item.categories?.includes(filters.category);
+          console.log(`Item ${item.name} categories:`, item.categories, 'Looking for:', filters.category, 'Has category:', hasCategory);
+          return hasCategory;
+        });
+        console.log('After category filter:', items);
+      }
+      
+      if (filters.tags) {
+        const selectedTags = filters.tags.split(',');
+        items = items.filter(item => 
+          item.tags?.some(tag => selectedTags.includes(tag))
         );
+        console.log('After tags filter:', items);
       }
       
-      const snapshot = await get(itemsQuery);
-      return snapshotToArray(snapshot);
+      return items;
     } catch (error) {
       console.error('Error fetching items:', error);
       throw error;
@@ -248,7 +261,8 @@ export const categoriesApi = {
   getAll: async () => {
     try {
       const snapshot = await get(ref(database, categoriesRef()));
-      return snapshotToArray(snapshot);
+      const categories = snapshotToArray(snapshot);
+      return categories;
     } catch (error) {
       console.error('Error fetching categories:', error);
       throw error;
@@ -264,7 +278,7 @@ export const categoriesApi = {
       // Build tree structure
       const buildTree = (parentId = null) => {
         return categories
-          .filter(cat => cat.parentId === parentId)
+          .filter(cat => cat.parentId === parentId || (parentId === null && !cat.parentId))
           .map(cat => ({
             ...cat,
             children: buildTree(cat.id)
@@ -285,6 +299,7 @@ export const categoriesApi = {
       const newCategory = {
         ...categoryData,
         id,
+        parentId: categoryData.parentId || null,
         createdAt: new Date().toISOString()
       };
       
@@ -332,6 +347,60 @@ export const categoriesApi = {
       return { success: true };
     } catch (error) {
       console.error('Error deleting category:', error);
+      throw error;
+    }
+  },
+
+  // Seed default categories
+  seedCategories: async () => {
+    const defaultCategories = [
+      {
+        name: "Materials",
+        parentId: null
+      },
+      {
+        name: "Objects",
+        parentId: null
+      },
+      {
+        name: "Notes",
+        parentId: null
+      },
+      {
+        name: "Cabinetry",
+        parentId: null
+      },
+      {
+        name: "Countertops",
+        parentId: null
+      }
+    ];
+
+    try {
+      // Check if categories already exist
+      const snapshot = await get(ref(database, categoriesRef()));
+      const existingCategories = snapshotToArray(snapshot);
+      
+      if (existingCategories.length > 0) {
+        console.log('Categories already exist, skipping seed');
+        return { count: existingCategories.length };
+      }
+
+      // Create default categories
+      const createPromises = defaultCategories.map(category => {
+        const id = generateId();
+        const newCategory = {
+          ...category,
+          id,
+          createdAt: new Date().toISOString()
+        };
+        return set(ref(database, categoriesRef(id)), newCategory);
+      });
+
+      await Promise.all(createPromises);
+      return { count: defaultCategories.length };
+    } catch (error) {
+      console.error('Error seeding categories:', error);
       throw error;
     }
   }

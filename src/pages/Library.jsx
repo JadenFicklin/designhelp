@@ -5,26 +5,19 @@ import useFilters from '../store/useFilters';
 import Tree from '../components/Tree';
 import ItemCard from '../components/ItemCard';
 import CreateItemForm from '../components/CreateItemForm';
-import uploadToCloudinary from '../utils/uploadToCloudinary';
-import { assetsApi } from '../utils/api';
 import { 
   showImportSuccess, 
   showExportSuccess, 
-  showUploadSuccess, 
   showImportError, 
-  showExportError, 
-  showUploadError,
+  showExportError,
   showCategoryError,
-  showConfirm,
-  showLoading,
-  closeAlert
+  showConfirm
 } from '../utils/alerts';
 
 const Library = () => {
   const queryClient = useQueryClient();
-  const { query, selectedCategory, selectedTags, setQuery, setSelectedCategory, clearFilters, getFilters } = useFilters();
+  const { query, selectedCategory, selectedTags, setQuery, setSelectedCategory, getFilters } = useFilters();
   const [importFile, setImportFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
 
   // Queries
   const { data: items = [], isLoading: itemsLoading } = useQuery({
@@ -32,7 +25,7 @@ const Library = () => {
     queryFn: () => itemsApi.getItems(getFilters()),
   });
 
-  const { data: categoriesTree = [] } = useQuery({
+  const { data: categoriesTree = [], isLoading: categoriesLoadingTree } = useQuery({
     queryKey: ['categories-tree'],
     queryFn: () => categoriesApi.getTree(),
   });
@@ -43,14 +36,7 @@ const Library = () => {
   });
 
   // Mutations
-  const seedMutation = useMutation({
-    mutationFn: itemsApi.seedData,
-    onSuccess: () => {
-      queryClient.invalidateQueries(['items']);
-      queryClient.invalidateQueries(['categories-tree']);
-      queryClient.invalidateQueries(['categories']);
-    },
-  });
+
 
   const importMutation = useMutation({
     mutationFn: itemsApi.importItems,
@@ -105,6 +91,8 @@ const Library = () => {
     },
   });
 
+
+
   // Handlers
   const handleExport = async () => {
     try {
@@ -150,26 +138,7 @@ const Library = () => {
     reader.readAsText(importFile);
   };
 
-  const handleImageUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
 
-    setUploading(true);
-    showLoading('Uploading image...');
-    
-    try {
-      const asset = await uploadToCloudinary(file);
-      await assetsApi.ingest(asset);
-      closeAlert();
-      showUploadSuccess();
-    } catch (error) {
-      closeAlert();
-      console.error('Upload failed:', error);
-      showUploadError(error);
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleCreateItem = async (itemData) => {
     await createItemMutation.mutateAsync(itemData);
@@ -220,7 +189,7 @@ const Library = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-gray-700">
-                Categories
+                Categories {categoriesLoadingTree ? '(Loading...)' : `(${categoriesTree.length})`}
               </label>
               <button
                 onClick={() => handleAddCategory({ name: 'New Category', parentId: null })}
@@ -231,41 +200,34 @@ const Library = () => {
               </button>
             </div>
             <div className="max-h-64 overflow-y-auto">
-              <Tree
-                data={categoriesTree}
-                selectedCategory={selectedCategory}
-                onSelectCategory={setSelectedCategory}
-                onAddCategory={handleAddCategory}
-                onUpdateCategory={handleUpdateCategory}
-                onDeleteCategory={handleDeleteCategory}
-              />
+              {categoriesLoadingTree ? (
+                <div className="text-sm text-gray-500 py-2">Loading categories...</div>
+                             ) : categoriesTree.length === 0 ? (
+                 <div className="text-sm text-gray-500 py-2">
+                   No categories found. Click + to add one.
+                 </div>
+              ) : (
+                <Tree
+                  data={categoriesTree}
+                  selectedCategory={selectedCategory}
+                  onSelectCategory={setSelectedCategory}
+                  onAddCategory={handleAddCategory}
+                  onUpdateCategory={handleUpdateCategory}
+                  onDeleteCategory={handleDeleteCategory}
+                />
+              )}
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-3">
-            <button
-              onClick={() => seedMutation.mutate()}
-              disabled={seedMutation.isPending}
-              className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
-            >
-              {seedMutation.isPending ? 'Loading...' : 'Load Sample Data'}
-            </button>
-
-            <button
-              onClick={handleExport}
-              className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
-            >
-              Export JSON
-            </button>
-
-            <button
-              onClick={clearFilters}
-              className="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
-            >
-              Clear Filters
-            </button>
-          </div>
+                     {/* Actions */}
+           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-3">
+             <button
+               onClick={handleExport}
+               className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+             >
+               Export JSON
+             </button>
+           </div>
 
           {/* Import */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -289,22 +251,7 @@ const Library = () => {
             )}
           </div>
 
-          {/* Image Upload */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Upload Image
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              disabled={uploading}
-              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
-            />
-            {uploading && (
-              <div className="mt-2 text-sm text-gray-500">Uploading...</div>
-            )}
-          </div>
+          
         </div>
       </div>
 
@@ -346,17 +293,11 @@ const Library = () => {
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               No items found
             </h3>
-            <p className="text-gray-500 mb-4">
-              {query || selectedCategory || selectedTags.length > 0
-                ? 'Try adjusting your filters or search terms.'
-                : 'Get started by loading sample data or creating your first item.'}
-            </p>
-            <button
-              onClick={() => seedMutation.mutate()}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-            >
-              Load Sample Data
-            </button>
+                         <p className="text-gray-500 mb-4">
+               {query || selectedCategory || selectedTags.length > 0
+                 ? 'Try adjusting your filters or search terms.'
+                 : 'Get started by creating your first item.'}
+             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

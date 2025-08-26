@@ -1,0 +1,41 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "items": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$itemId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['name', 'kind'])"
+      }
+    },
+    "categories": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$categoryId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['name'])"
+      }
+    },
+    "assets": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$assetId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "flashcards": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$flashcardId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['question', 'answer'])"
+      }
+    }
+  }
+}

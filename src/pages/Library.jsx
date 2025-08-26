@@ -18,7 +18,7 @@ import {
 const Library = () => {
   const queryClient = useQueryClient();
   const { query, selectedCategory, selectedTags, setQuery, setSelectedCategory, getFilters } = useFilters();
-  const [importFile, setImportFile] = useState(null);
+  const [ setImportFile] = useState(null);
   const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'spreadsheet'
 
   // Queries
@@ -115,8 +115,8 @@ const Library = () => {
     }
   };
 
-  const handleImport = async () => {
-    if (!importFile) return;
+  const handleImport = async (file) => {
+    if (!file) return;
 
     const result = await showConfirm(
       'Import Data',
@@ -137,7 +137,7 @@ const Library = () => {
         showImportError(error);
       }
     };
-    reader.readAsText(importFile);
+    reader.readAsText(file);
   };
 
 
@@ -222,36 +222,44 @@ const Library = () => {
             </div>
           </div>
 
-                     {/* Actions */}
-           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-3">
-             <button
-               onClick={handleExport}
-               className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
-             >
-               Export JSON
-             </button>
-           </div>
-
-          {/* Import */}
+          {/* Import/Export */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Import JSON
-            </label>
+            <h3 className="text-sm font-medium text-gray-700 mb-3">
+              Data Management
+            </h3>
+            
+            <div className="grid grid-cols-2 gap-2">
+              {/* Export */}
+              <button
+                onClick={handleExport}
+                className="bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 transition-colors text-sm"
+              >
+                Export JSON
+              </button>
+              
+              {/* Import */}
+              <button
+                onClick={() => document.getElementById('import-file').click()}
+                className="bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm"
+              >
+                Import JSON
+              </button>
+            </div>
+            
+            {/* Hidden file input */}
             <input
+              id="import-file"
               type="file"
               accept=".json"
-              onChange={(e) => setImportFile(e.target.files[0])}
-              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  setImportFile(file);
+                  handleImport(file);
+                }
+              }}
+              className="hidden"
             />
-            {importFile && (
-              <button
-                onClick={handleImport}
-                disabled={importMutation.isPending}
-                className="w-full mt-2 bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 disabled:opacity-50"
-              >
-                {importMutation.isPending ? 'Importing...' : 'Import'}
-              </button>
-            )}
           </div>
 
           

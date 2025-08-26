@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { showItemCreated, showCreateItemError, showLoading, closeAlert, showError, showUploadError } from '../utils/alerts';
+import { showItemCreated, showCreateItemError, showLoading, closeAlert, showUploadError } from '../utils/alerts';
 import uploadToCloudinary from '../utils/uploadToCloudinary';
 import { assetsApi } from '../utils/api';
 
@@ -11,17 +11,6 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
-  const parseJsonField = (value, fieldName) => {
-    if (!value || value.trim() === '') {
-      return {};
-    }
-    
-    try {
-      return JSON.parse(value);
-    } catch (error) {
-      throw new Error(`${fieldName} must be valid JSON. Example: {"key": "value"}`);
-    }
-  };
 
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
@@ -54,16 +43,18 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
     showLoading('Creating item...');
     
     try {
-      // Validate JSON fields first
+      // Process dimensions from the new form structure
       let dimensions = {};
-      
-      try {
-        dimensions = parseJsonField(data.dimensions, 'Dimensions');
-      } catch (error) {
-        closeAlert();
-        showError('Invalid Dimensions', error.message);
-        setIsSubmitting(false);
-        return;
+      if (data.dimensions) {
+        const { width, height, depth, unit } = data.dimensions;
+        if (width || height || depth || unit) {
+          dimensions = {
+            ...(width && { width: parseFloat(width) }),
+            ...(height && { height: parseFloat(height) }),
+            ...(depth && { depth: parseFloat(depth) }),
+            ...(unit && { unit })
+          };
+        }
       }
 
       // Process form data
@@ -257,19 +248,62 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
 
         {/* Dimensions */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Dimensions (JSON) - Optional
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Dimensions - Optional
           </label>
-          <textarea
-            {...register('dimensions')}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder='{"width": 10, "height": 5, "unit": "in"} or leave empty'
-            disabled={isSubmitting}
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Enter valid JSON or leave empty. Example: &#123;"width": 10, "height": 5, "unit": "in"&#125;
-          </p>
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Width</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  {...register('dimensions.width')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  placeholder="0"
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Height</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  {...register('dimensions.height')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  placeholder="0"
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Depth</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  {...register('dimensions.depth')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  placeholder="0"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">Unit</label>
+              <select
+                {...register('dimensions.unit')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                disabled={isSubmitting}
+              >
+                <option value="">Select unit</option>
+                <option value="in">Inches (in)</option>
+                <option value="cm">Centimeters (cm)</option>
+                <option value="mm">Millimeters (mm)</option>
+                <option value="ft">Feet (ft)</option>
+                <option value="m">Meters (m)</option>
+                <option value="yd">Yards (yd)</option>
+              </select>
+            </div>
+          </div>
         </div>
 
 

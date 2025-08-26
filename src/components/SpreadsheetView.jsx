@@ -13,6 +13,7 @@ const SpreadsheetView = ({ items, categories = [] }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedItemForDetail, setSelectedItemForDetail] = useState(null);
+  const [dimensionsEditor, setDimensionsEditor] = useState({ width: '', height: '', depth: '', unit: '' });
 
   const updateItemMutation = useMutation({
     mutationFn: ({ id, data }) => itemsApi.updateItem(id, data),
@@ -52,6 +53,16 @@ const SpreadsheetView = ({ items, categories = [] }) => {
       const item = items.find(item => item.id === itemId);
       const categoryIds = item?.categories || [];
       setEditValue(categoryIds.length > 0 ? categoryIds[0] : '');
+    } else if (field === 'dimensions') {
+      // Initialize dimensions editor with current values
+      const item = items.find(item => item.id === itemId);
+      const dims = item?.dimensions || {};
+      setDimensionsEditor({
+        width: dims.width || '',
+        height: dims.height || '',
+        depth: dims.depth || '',
+        unit: dims.unit || ''
+      });
     } else {
       setEditValue(value || '');
     }
@@ -74,13 +85,17 @@ const SpreadsheetView = ({ items, categories = [] }) => {
     } else if (field === 'tags') {
       parsedValue = editValue.split(',').map(tag => tag.trim()).filter(Boolean);
     } else if (field === 'dimensions') {
-      try {
-        parsedValue = editValue === '' ? {} : JSON.parse(editValue);
-      } catch (error) {
-        // If JSON parsing fails, keep the original value
-        setEditingCell(null);
-        setEditValue('');
-        return;
+      // Process dimensions from the editor
+      const { width, height, depth, unit } = dimensionsEditor;
+      if (width || height || depth || unit) {
+        parsedValue = {
+          ...(width && { width: parseFloat(width) }),
+          ...(height && { height: parseFloat(height) }),
+          ...(depth && { depth: parseFloat(depth) }),
+          ...(unit && { unit })
+        };
+      } else {
+        parsedValue = {};
       }
     }
 
@@ -122,6 +137,7 @@ const SpreadsheetView = ({ items, categories = [] }) => {
     } else if (e.key === 'Escape') {
       setEditingCell(null);
       setEditValue('');
+      setDimensionsEditor({ width: '', height: '', depth: '', unit: '' });
     }
   };
 
@@ -142,7 +158,15 @@ const SpreadsheetView = ({ items, categories = [] }) => {
     }
     
     if (field === 'dimensions') {
-      return typeof value === 'object' ? JSON.stringify(value) : value;
+      if (typeof value === 'object' && value !== null) {
+        const parts = [];
+        if (value.width) parts.push(`W: ${value.width}`);
+        if (value.height) parts.push(`H: ${value.height}`);
+        if (value.depth) parts.push(`D: ${value.depth}`);
+        if (value.unit) parts.push(value.unit);
+        return parts.length > 0 ? parts.join(' ') : '';
+      }
+      return '';
     }
     
     if (field === 'cost') {
@@ -364,6 +388,60 @@ const SpreadsheetView = ({ items, categories = [] }) => {
                  <option key={category.id} value={category.id}>{category.name}</option>
                ))}
              </select>
+           ) : editingCell.field === 'dimensions' ? (
+             <div className="space-y-3">
+               <div className="grid grid-cols-3 gap-3">
+                 <div>
+                   <label className="block text-xs text-gray-600 mb-1">Width</label>
+                   <input
+                     type="number"
+                     step="0.01"
+                     value={dimensionsEditor.width}
+                     onChange={(e) => setDimensionsEditor(prev => ({ ...prev, width: e.target.value }))}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                     placeholder="0"
+                   />
+                 </div>
+                 <div>
+                   <label className="block text-xs text-gray-600 mb-1">Height</label>
+                   <input
+                     type="number"
+                     step="0.01"
+                     value={dimensionsEditor.height}
+                     onChange={(e) => setDimensionsEditor(prev => ({ ...prev, height: e.target.value }))}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                     placeholder="0"
+                   />
+                 </div>
+                 <div>
+                   <label className="block text-xs text-gray-600 mb-1">Depth</label>
+                   <input
+                     type="number"
+                     step="0.01"
+                     value={dimensionsEditor.depth}
+                     onChange={(e) => setDimensionsEditor(prev => ({ ...prev, depth: e.target.value }))}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                     placeholder="0"
+                   />
+                 </div>
+               </div>
+               <div>
+                 <label className="block text-xs text-gray-600 mb-1">Unit</label>
+                 <select
+                   value={dimensionsEditor.unit}
+                   onChange={(e) => setDimensionsEditor(prev => ({ ...prev, unit: e.target.value }))}
+                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                 >
+                   <option value="">Select unit</option>
+                   <option value="in">Inches (in)</option>
+                   <option value="cm">Centimeters (cm)</option>
+                   <option value="mm">Millimeters (mm)</option>
+                   <option value="ft">Feet (ft)</option>
+                   <option value="m">Meters (m)</option>
+                   <option value="yd">Yards (yd)</option>
+                 </select>
+               </div>
+             </div>
            ) : (
              <input
                ref={inputRef}
@@ -381,6 +459,7 @@ const SpreadsheetView = ({ items, categories = [] }) => {
                onClick={() => {
                  setEditingCell(null);
                  setEditValue('');
+                 setDimensionsEditor({ width: '', height: '', depth: '', unit: '' });
                }}
                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
              >
@@ -495,12 +574,24 @@ const SpreadsheetView = ({ items, categories = [] }) => {
                <div>
                  <label className="block text-sm font-medium text-gray-700 mb-2">Dimensions</label>
                  <div className="bg-gray-50 p-3 rounded-md">
-                   <pre className="text-sm text-gray-900 whitespace-pre-wrap">
-                     {selectedItemForDetail.dimensions && Object.keys(selectedItemForDetail.dimensions).length > 0 
-                       ? JSON.stringify(selectedItemForDetail.dimensions, null, 2)
-                       : 'No dimensions specified'
-                     }
-                   </pre>
+                   {selectedItemForDetail.dimensions && Object.keys(selectedItemForDetail.dimensions).length > 0 ? (
+                     <div className="text-sm text-gray-900 space-y-2">
+                       {selectedItemForDetail.dimensions.width && (
+                         <div><strong>Width:</strong> {selectedItemForDetail.dimensions.width} {selectedItemForDetail.dimensions.unit}</div>
+                       )}
+                       {selectedItemForDetail.dimensions.height && (
+                         <div><strong>Height:</strong> {selectedItemForDetail.dimensions.height} {selectedItemForDetail.dimensions.unit}</div>
+                       )}
+                       {selectedItemForDetail.dimensions.depth && (
+                         <div><strong>Depth:</strong> {selectedItemForDetail.dimensions.depth} {selectedItemForDetail.dimensions.unit}</div>
+                       )}
+                       {selectedItemForDetail.dimensions.unit && !selectedItemForDetail.dimensions.width && !selectedItemForDetail.dimensions.height && !selectedItemForDetail.dimensions.depth && (
+                         <div><strong>Unit:</strong> {selectedItemForDetail.dimensions.unit}</div>
+                       )}
+                     </div>
+                   ) : (
+                     <span className="text-gray-500">No dimensions specified</span>
+                   )}
                  </div>
                </div>
                

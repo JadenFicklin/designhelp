@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { getBackgroundThemeStyles } from './utils/themeUtils';
@@ -17,7 +17,11 @@ const queryClient = new QueryClient();
 const AppNavigation = () => {
   const { currentUser, logout, userCoins, userBackgroundTheme } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Check if we're on the shop page
+  const isOnShopPage = location.pathname === '/shop';
 
   const handleLogout = async () => {
     try {
@@ -54,14 +58,16 @@ const AppNavigation = () => {
               🏆 Collection
             </Link>
             <div className="flex items-center space-x-4">
-              {/* Coin Counter */}
-              <div className="flex items-center space-x-2 bg-gradient-to-r from-yellow-400 to-orange-500 px-4 py-2 rounded-full shadow-lg transform hover:scale-105 transition-all duration-200">
-                <div className="text-yellow-800 text-lg animate-bounce">💰</div>
-                <div className="text-white font-bold text-lg">
-                  {userCoins.toLocaleString()}
+              {/* Coin Counter - Only show with animation on shop page */}
+              {isOnShopPage && (
+                <div className="flex items-center space-x-2 bg-gradient-to-r from-yellow-400 to-orange-500 px-4 py-2 rounded-full shadow-lg transform hover:scale-105 transition-all duration-200">
+                  <div className="text-yellow-800 text-lg animate-bounce">💰</div>
+                  <div className="text-white font-bold text-lg">
+                    {userCoins.toLocaleString()}
+                  </div>
+                  <div className="text-yellow-800 text-sm opacity-80">coins</div>
                 </div>
-                <div className="text-yellow-800 text-sm opacity-80">coins</div>
-              </div>
+              )}
               
               <span className={`text-sm ${themeStyles.textMuted}`}>
                 {currentUser?.email}
@@ -77,13 +83,15 @@ const AppNavigation = () => {
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center space-x-2">
-            {/* Coin Counter for Mobile */}
-            <div className="flex items-center space-x-1 bg-gradient-to-r from-yellow-400 to-orange-500 px-2 py-1 rounded-full shadow-lg">
-              <div className="text-yellow-800 text-sm">💰</div>
-              <div className="text-white font-bold text-xs">
-                {userCoins.toLocaleString()}
+            {/* Coin Counter for Mobile - Only show with animation on shop page */}
+            {isOnShopPage && (
+              <div className="flex items-center space-x-1 bg-gradient-to-r from-yellow-400 to-orange-500 px-2 py-1 rounded-full shadow-lg">
+                <div className="text-yellow-800 text-sm animate-bounce">💰</div>
+                <div className="text-white font-bold text-xs">
+                  {userCoins.toLocaleString()}
+                </div>
               </div>
-            </div>
+            )}
             
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

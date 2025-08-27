@@ -125,37 +125,37 @@ const ItemDetail = () => {
   const mainImage = item.assets && item.assets.length > 0 ? item.assets[0] : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4">
           <button
             onClick={() => navigate('/')}
-            className="text-blue-600 hover:text-blue-700 flex items-center"
+            className="text-blue-600 hover:text-blue-700 flex items-center text-sm sm:text-base mb-2 sm:mb-0"
           >
             ← Back to Library
           </button>
           <button
             onClick={handleEdit}
             disabled={editing}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm sm:text-base w-full sm:w-auto"
           >
             Edit
           </button>
         </div>
         
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">{item.name}</h1>
-        <p className="text-gray-600">{item.description}</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">{item.name}</h1>
+        <p className="text-gray-600 text-sm sm:text-base">{item.description}</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Media Panel */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Media</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-0">Media</h2>
             <button
               onClick={handleOpenImageModal}
-              className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+              className="px-2 sm:px-3 py-1 bg-blue-600 text-white text-xs sm:text-sm rounded hover:bg-blue-700 transition-colors w-full sm:w-auto"
             >
               Manage Images
             </button>
@@ -164,24 +164,24 @@ const ItemDetail = () => {
             <img
               src={mainImage.url}
               alt={mainImage.alt || item.name}
-              className="w-full h-64 object-cover rounded-lg"
+              className="w-full h-48 sm:h-64 object-cover rounded-lg"
             />
           ) : (
-            <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+            <div className="w-full h-48 sm:h-64 bg-gray-100 rounded-lg flex items-center justify-center">
               <div className="text-gray-400 text-center">
-                <div className="text-4xl mb-2">📄</div>
-                <div>No Image</div>
+                <div className="text-3xl sm:text-4xl mb-2">📄</div>
+                <div className="text-sm sm:text-base">No Image</div>
               </div>
             </div>
           )}
         </div>
 
         {/* Basics Panel */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Basics</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Basics</h2>
           
           {editing ? (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Cost
@@ -191,33 +191,33 @@ const ItemDetail = () => {
                    step="0.01"
                    value={editData.cost || ''}
                    onChange={(e) => setEditData({ ...editData, cost: e.target.value === '' ? null : (isNaN(parseFloat(e.target.value)) ? null : parseFloat(e.target.value)) })}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                  />
               </div>
               
 
               
-              <div className="flex space-x-2">
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                 <button
                   onClick={handleSave}
                   disabled={updateMutation.isPending}
-                  className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
+                  className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-green-700 disabled:opacity-50 text-sm sm:text-base w-full sm:w-auto"
                 >
                   {updateMutation.isPending ? 'Saving...' : 'Save'}
                 </button>
                 <button
                   onClick={handleCancel}
-                  className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+                  className="bg-gray-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-gray-700 text-sm sm:text-base w-full sm:w-auto"
                 >
                   Cancel
                 </button>
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               <div>
                 <span className="text-sm font-medium text-gray-700">Cost:</span>
-                <div className="text-lg font-semibold text-green-600">
+                <div className="text-base sm:text-lg font-semibold text-green-600">
                   {formatCost(item.cost)}
                 </div>
               </div>
@@ -236,9 +236,9 @@ const ItemDetail = () => {
         </div>
 
         {/* Dimensions Panel */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Dimensions</h2>
-          <pre className="bg-gray-50 p-4 rounded-lg text-sm overflow-x-auto">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Dimensions</h2>
+          <pre className="bg-gray-50 p-3 sm:p-4 rounded-lg text-xs sm:text-sm overflow-x-auto">
             {JSON.stringify(item.dimensions, null, 2)}
           </pre>
         </div>
@@ -246,40 +246,40 @@ const ItemDetail = () => {
 
 
         {/* Categories & Tags */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:col-span-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 lg:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Categories</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Categories</h2>
               <div className="flex flex-wrap gap-2">
                 {item.categories && item.categories.length > 0 ? (
                   item.categories.map((category) => (
                     <span
                       key={category}
-                      className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"
+                      className="bg-blue-100 text-blue-700 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm"
                     >
                       {category}
                     </span>
                   ))
                 ) : (
-                  <span className="text-gray-500">No categories</span>
+                  <span className="text-gray-500 text-sm sm:text-base">No categories</span>
                 )}
               </div>
             </div>
             
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Tags</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Tags</h2>
               <div className="flex flex-wrap gap-2">
                 {item.tags && item.tags.length > 0 ? (
                   item.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
+                      className="bg-gray-100 text-gray-700 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm"
                     >
                       #{tag}
                     </span>
                   ))
                 ) : (
-                  <span className="text-gray-500">No tags</span>
+                  <span className="text-gray-500 text-sm sm:text-base">No tags</span>
                 )}
               </div>
             </div>

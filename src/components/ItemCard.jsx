@@ -56,10 +56,10 @@ const ItemCard = ({ item }) => {
       {/* Delete Button */}
       <button
         onClick={handleDelete}
-        className="absolute top-2 right-2 z-10 bg-red-600 text-white p-1 rounded-full hover:bg-red-700 transition-colors opacity-0 group-hover:opacity-100"
+        className="absolute top-1 sm:top-2 right-1 sm:right-2 z-10 bg-red-600 text-white p-1 rounded-full hover:bg-red-700 transition-colors opacity-0 group-hover:opacity-100"
         title="Delete item"
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
@@ -73,35 +73,35 @@ const ItemCard = ({ item }) => {
           <img
             src={mainImage.url}
             alt={mainImage.alt || item.name}
-            className="w-full h-48 object-cover"
+            className="w-full h-32 sm:h-48 object-cover"
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-48 flex items-center justify-center bg-gray-100">
+          <div className="w-full h-32 sm:h-48 flex items-center justify-center bg-gray-100">
             <div className="text-gray-400 text-center">
-              <div className="text-4xl mb-2">📄</div>
-              <div className="text-sm">No Image</div>
+              <div className="text-2xl sm:text-4xl mb-1 sm:mb-2">📄</div>
+              <div className="text-xs sm:text-sm">No Image</div>
             </div>
           </div>
         )}
       </div>
       
-      <div className="p-4">
-        <h3 className="font-medium text-gray-900 mb-1 line-clamp-2">
+      <div className="p-3 sm:p-4">
+        <h3 className="font-medium text-gray-900 mb-1 line-clamp-2 text-sm sm:text-base">
           {item.name}
         </h3>
         
         {item.description && (
-          <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+          <p className="text-xs sm:text-sm text-gray-600 mb-2 line-clamp-2">
             {item.description}
           </p>
         )}
         
         <div className="flex items-center justify-between mb-2">
-          <span className="text-lg font-semibold text-green-600">
+          <span className="text-base sm:text-lg font-semibold text-green-600">
             {formatCost(item.cost)}
           </span>
-          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+          <span className="text-xs text-gray-500 bg-gray-100 px-1 sm:px-2 py-1 rounded">
             {item.kind}
           </span>
         </div>
@@ -115,7 +115,7 @@ const ItemCard = ({ item }) => {
             {item.categories.slice(0, 2).map((category) => (
               <span
                 key={category}
-                className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded"
+                className="text-xs bg-blue-100 text-blue-700 px-1 sm:px-2 py-1 rounded"
               >
                 {category}
               </span>
@@ -133,7 +133,7 @@ const ItemCard = ({ item }) => {
             {item.tags.slice(0, 3).map((tag) => (
               <span
                 key={tag}
-                className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded"
+                className="text-xs bg-gray-100 text-gray-600 px-1 sm:px-2 py-1 rounded"
               >
                 #{tag}
               </span>

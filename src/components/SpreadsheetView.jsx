@@ -14,6 +14,19 @@ const SpreadsheetView = ({ items, categories = [] }) => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedItemForDetail, setSelectedItemForDetail] = useState(null);
   const [dimensionsEditor, setDimensionsEditor] = useState({ width: '', height: '', depth: '', unit: '' });
+  
+  // New row creation state
+  const [isAddingNewRow, setIsAddingNewRow] = useState(false);
+  const [newRowData, setNewRowData] = useState({
+    name: '',
+    kind: 'object',
+    description: '',
+    categories: [],
+    tags: [],
+    cost: null,
+    dimensions: { width: '', height: '', depth: '', unit: '' },
+    assets: []
+  });
 
   const updateItemMutation = useMutation({
     mutationFn: ({ id, data }) => itemsApi.updateItem(id, data),
@@ -26,6 +39,24 @@ const SpreadsheetView = ({ items, categories = [] }) => {
     mutationFn: itemsApi.deleteItem,
     onSuccess: () => {
       queryClient.invalidateQueries(['items']);
+    },
+  });
+
+  const createItemMutation = useMutation({
+    mutationFn: itemsApi.createItem,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['items']);
+      setIsAddingNewRow(false);
+      setNewRowData({
+        name: '',
+        kind: 'object',
+        description: '',
+        categories: [],
+        tags: [],
+        cost: null,
+        dimensions: { width: '', height: '', depth: '', unit: '' },
+        assets: []
+      });
     },
   });
 
@@ -141,6 +172,58 @@ const SpreadsheetView = ({ items, categories = [] }) => {
     }
   };
 
+  // New row creation functions
+  const handleStartNewRow = () => {
+    setIsAddingNewRow(true);
+  };
+
+  const handleCancelNewRow = () => {
+    setIsAddingNewRow(false);
+    setNewRowData({
+      name: '',
+      kind: 'object',
+      description: '',
+      categories: [],
+      tags: [],
+      cost: null,
+      dimensions: { width: '', height: '', depth: '', unit: '' },
+      assets: []
+    });
+  };
+
+  const handleNewRowDataChange = (field, value) => {
+    if (field === 'dimensions') {
+      setNewRowData(prev => ({
+        ...prev,
+        dimensions: { ...prev.dimensions, ...value }
+      }));
+    } else if (field === 'tags') {
+      const tags = value.split(',').map(tag => tag.trim()).filter(Boolean);
+      setNewRowData(prev => ({ ...prev, tags }));
+    } else if (field === 'cost') {
+      const cost = value === '' ? null : (isNaN(parseFloat(value)) ? null : parseFloat(value));
+      setNewRowData(prev => ({ ...prev, cost }));
+    } else if (field === 'categories') {
+      setNewRowData(prev => ({ ...prev, categories: value ? [value] : [] }));
+    } else {
+      setNewRowData(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
+  const handleSaveNewRow = async () => {
+    if (!newRowData.name.trim()) {
+      alert('Name is required');
+      return;
+    }
+
+    try {
+      await createItemMutation.mutateAsync(newRowData);
+    } catch (error) {
+      console.error('Error creating item:', error);
+      alert('Failed to create item. Please try again.');
+    }
+  };
+
   const getCategoryName = (categoryId) => {
     const category = categories.find(cat => cat.id === categoryId);
     return category ? category.name : categoryId;
@@ -218,9 +301,23 @@ const SpreadsheetView = ({ items, categories = [] }) => {
     { key: 'actions', label: 'Actions', width: '100px' },
   ];
 
-    return (
+  return (
     <>
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        {/* New Row Button */}
+        <div className="p-4 border-b border-gray-200 bg-gray-50">
+          <button
+            onClick={handleStartNewRow}
+            disabled={isAddingNewRow}
+            className="px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span>Add New Item</span>
+          </button>
+        </div>
+        
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -240,48 +337,197 @@ const SpreadsheetView = ({ items, categories = [] }) => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {items.map((item, index) => (
-                                 <tr key={item.id} className="hover:bg-gray-50">
-                   <td 
-                     className="px-4 py-3 text-sm text-gray-500 border-r border-gray-100 cursor-pointer hover:bg-blue-50 transition-colors"
-                     onClick={() => handleRowNumberClick(item)}
-                     title="Click to view details"
-                   >
-                     {index + 1}
-                   </td>
+              {/* New Row (when adding) */}
+              {isAddingNewRow && (
+                <tr className="bg-green-50 border-2 border-green-200">
+                  <td className="px-4 py-3 text-sm text-gray-500 border-r border-gray-100 bg-green-100">
+                    New
+                  </td>
                   {columns.map((column) => {
-                     const value = item[column.key];
-                     const displayValue = formatValue(value, column.key);
-                     const truncatedValue = column.key === 'description' ? truncateText(displayValue, 25) : displayValue;
+                    if (column.key === 'actions') {
+                      return (
+                        <td key={column.key} className="px-4 py-3 text-sm text-gray-900 border-r border-gray-100">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={handleSaveNewRow}
+                              disabled={createItemMutation.isPending}
+                              className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:bg-gray-400 transition-colors"
+                            >
+                              {createItemMutation.isPending ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                              onClick={handleCancelNewRow}
+                              className="px-3 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </td>
+                      );
+                    }
                     
-                                         // Special handling for different column types
-                     if (column.key === 'kind') {
-                       return (
-                         <td key={column.key} className="px-4 py-3 text-sm text-gray-900 border-r border-gray-100">
-                           <div
-                             className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded -mx-2 transition-colors"
-                             onClick={(e) => handleCellClick(item.id, column.key, displayValue, e)}
-                             title="Click to edit"
-                           >
-                             {displayValue || <span className="text-gray-400 italic">Click to edit</span>}
-                           </div>
-                         </td>
-                       );
-                     }
-                     
-                     if (column.key === 'categories') {
-                       return (
-                         <td key={column.key} className="px-4 py-3 text-sm text-gray-900 border-r border-gray-100">
-                           <div
-                             className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded -mx-2 transition-colors"
-                             onClick={(e) => handleCellClick(item.id, column.key, displayValue, e)}
-                             title="Click to edit"
-                           >
-                             {displayValue || <span className="text-gray-400 italic">Click to edit</span>}
-                           </div>
-                         </td>
-                       );
-                     }
+                    if (column.key === 'assets') {
+                      return (
+                        <td key={column.key} className="px-4 py-3 text-sm text-gray-900 border-r border-gray-100">
+                          <span className="text-gray-500 text-xs">Add after save</span>
+                        </td>
+                      );
+                    }
+                    
+                    if (column.key === 'kind') {
+                      return (
+                        <td key={column.key} className="px-4 py-3 text-sm text-gray-900 border-r border-gray-100">
+                          <select
+                            value={newRowData.kind}
+                            onChange={(e) => handleNewRowDataChange('kind', e.target.value)}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            {getAvailableOptions('kind').map(option => (
+                              <option key={option} value={option}>{option}</option>
+                            ))}
+                          </select>
+                        </td>
+                      );
+                    }
+                    
+                    if (column.key === 'categories') {
+                      return (
+                        <td key={column.key} className="px-4 py-3 text-sm text-gray-900 border-r border-gray-100">
+                          <select
+                            value={newRowData.categories[0] || ''}
+                            onChange={(e) => handleNewRowDataChange('categories', e.target.value)}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            <option value="">No category</option>
+                            {getAvailableOptions('categories').map(category => (
+                              <option key={category.id} value={category.id}>{category.name}</option>
+                            ))}
+                          </select>
+                        </td>
+                      );
+                    }
+                    
+                    if (column.key === 'cost') {
+                      return (
+                        <td key={column.key} className="px-4 py-3 text-sm text-gray-900 border-r border-gray-100">
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={newRowData.cost === null ? '' : newRowData.cost}
+                            onChange={(e) => handleNewRowDataChange('cost', e.target.value)}
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            placeholder="0.00"
+                          />
+                        </td>
+                      );
+                    }
+                    
+                    if (column.key === 'dimensions') {
+                      return (
+                        <td key={column.key} className="px-4 py-3 text-sm text-gray-900 border-r border-gray-100">
+                          <div className="space-y-1">
+                            <div className="grid grid-cols-3 gap-1">
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={newRowData.dimensions.width}
+                                onChange={(e) => handleNewRowDataChange('dimensions', { width: e.target.value })}
+                                className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                placeholder="W"
+                              />
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={newRowData.dimensions.height}
+                                onChange={(e) => handleNewRowDataChange('dimensions', { height: e.target.value })}
+                                className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                placeholder="H"
+                              />
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={newRowData.dimensions.depth}
+                                onChange={(e) => handleNewRowDataChange('dimensions', { depth: e.target.value })}
+                                className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                placeholder="D"
+                              />
+                            </div>
+                            <select
+                              value={newRowData.dimensions.unit}
+                              onChange={(e) => handleNewRowDataChange('dimensions', { unit: e.target.value })}
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                              <option value="">Unit</option>
+                              <option value="in">in</option>
+                              <option value="cm">cm</option>
+                              <option value="mm">mm</option>
+                              <option value="ft">ft</option>
+                              <option value="m">m</option>
+                              <option value="yd">yd</option>
+                            </select>
+                          </div>
+                        </td>
+                      );
+                    }
+                    
+                    return (
+                      <td key={column.key} className="px-4 py-3 text-sm text-gray-900 border-r border-gray-100">
+                        <input
+                          type="text"
+                          value={newRowData[column.key] || ''}
+                          onChange={(e) => handleNewRowDataChange(column.key, e.target.value)}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder={`Enter ${column.label.toLowerCase()}`}
+                        />
+                      </td>
+                    );
+                  })}
+                </tr>
+              )}
+              
+              {/* Existing Items */}
+              {items.map((item, index) => (
+                <tr key={item.id} className="hover:bg-gray-50">
+                  <td 
+                    className="px-4 py-3 text-sm text-gray-500 border-r border-gray-100 cursor-pointer hover:bg-blue-50 transition-colors"
+                    onClick={() => handleRowNumberClick(item)}
+                    title="Click to view details"
+                  >
+                    {index + 1}
+                  </td>
+                  {columns.map((column) => {
+                    const value = item[column.key];
+                    const displayValue = formatValue(value, column.key);
+                    const truncatedValue = column.key === 'description' ? truncateText(displayValue, 25) : displayValue;
+                    
+                    // Special handling for different column types
+                    if (column.key === 'kind') {
+                      return (
+                        <td key={column.key} className="px-4 py-3 text-sm text-gray-900 border-r border-gray-100">
+                          <div
+                            className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded -mx-2 transition-colors"
+                            onClick={(e) => handleCellClick(item.id, column.key, displayValue, e)}
+                            title="Click to edit"
+                          >
+                            {displayValue || <span className="text-gray-400 italic">Click to edit</span>}
+                          </div>
+                        </td>
+                      );
+                    }
+                    
+                    if (column.key === 'categories') {
+                      return (
+                        <td key={column.key} className="px-4 py-3 text-sm text-gray-900 border-r border-gray-100">
+                          <div
+                            className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded -mx-2 transition-colors"
+                            onClick={(e) => handleCellClick(item.id, column.key, displayValue, e)}
+                            title="Click to edit"
+                          >
+                            {displayValue || <span className="text-gray-400 italic">Click to edit</span>}
+                          </div>
+                        </td>
+                      );
+                    }
                     
                     if (column.key === 'assets') {
                       return (
@@ -309,20 +555,20 @@ const SpreadsheetView = ({ items, categories = [] }) => {
                       );
                     }
                     
-                                         return (
-                       <td
-                         key={column.key}
-                         className="px-4 py-3 text-sm text-gray-900 border-r border-gray-100"
-                       >
-                         <div
-                           className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded -mx-2 transition-colors"
-                           onClick={(e) => handleCellClick(item.id, column.key, displayValue, e)}
-                           title={column.key === 'description' && displayValue.length > 25 ? displayValue : "Click to edit"}
-                         >
-                           {truncatedValue || <span className="text-gray-400 italic">Click to edit</span>}
-                         </div>
-                       </td>
-                     );
+                    return (
+                      <td
+                        key={column.key}
+                        className="px-4 py-3 text-sm text-gray-900 border-r border-gray-100"
+                      >
+                        <div
+                          className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded -mx-2 transition-colors"
+                          onClick={(e) => handleCellClick(item.id, column.key, displayValue, e)}
+                          title={column.key === 'description' && displayValue.length > 25 ? displayValue : "Click to edit"}
+                        >
+                          {truncatedValue || <span className="text-gray-400 italic">Click to edit</span>}
+                        </div>
+                      </td>
+                    );
                   })}
                 </tr>
               ))}
@@ -330,303 +576,303 @@ const SpreadsheetView = ({ items, categories = [] }) => {
           </table>
         </div>
         
-                 {items.length === 0 && (
-           <div className="text-center py-8 text-gray-500">
-             No items found. Create your first item to see it in the spreadsheet view.
-           </div>
-         )}
-       </div>
-       
-       {/* Floating Edit Bubble */}
-       {editingCell && (
-         <div
-           className="fixed z-50 bg-white border border-gray-300 rounded-lg shadow-lg p-4 min-w-[300px]"
-           style={{
-             left: `${editPosition.x}px`,
-             top: `${editPosition.y}px`
-           }}
-         >
-           <div className="flex items-center justify-between mb-2">
-             <span className="text-sm font-medium text-gray-700">
-               Edit {editingCell.field}
-             </span>
-             <button
-               onClick={() => {
-                 setEditingCell(null);
-                 setEditValue('');
-               }}
-               className="text-gray-400 hover:text-gray-600"
-             >
-               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-               </svg>
-             </button>
-           </div>
-           
-           {editingCell.field === 'kind' ? (
-             <select
-               ref={inputRef}
-               value={editValue}
-               onChange={(e) => setEditValue(e.target.value)}
-               onKeyDown={handleKeyDown}
-               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-             >
-               {getAvailableOptions('kind').map(option => (
-                 <option key={option} value={option}>{option}</option>
-               ))}
-             </select>
-           ) : editingCell.field === 'categories' ? (
-             <select
-               ref={inputRef}
-               value={editValue}
-               onChange={(e) => setEditValue(e.target.value)}
-               onKeyDown={handleKeyDown}
-               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-             >
-               <option value="">No category</option>
-               {getAvailableOptions('categories').map(category => (
-                 <option key={category.id} value={category.id}>{category.name}</option>
-               ))}
-             </select>
-           ) : editingCell.field === 'dimensions' ? (
-             <div className="space-y-3">
-               <div className="grid grid-cols-3 gap-3">
-                 <div>
-                   <label className="block text-xs text-gray-600 mb-1">Width</label>
-                   <input
-                     type="number"
-                     step="0.01"
-                     value={dimensionsEditor.width}
-                     onChange={(e) => setDimensionsEditor(prev => ({ ...prev, width: e.target.value }))}
-                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                     placeholder="0"
-                   />
-                 </div>
-                 <div>
-                   <label className="block text-xs text-gray-600 mb-1">Height</label>
-                   <input
-                     type="number"
-                     step="0.01"
-                     value={dimensionsEditor.height}
-                     onChange={(e) => setDimensionsEditor(prev => ({ ...prev, height: e.target.value }))}
-                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                     placeholder="0"
-                   />
-                 </div>
-                 <div>
-                   <label className="block text-xs text-gray-600 mb-1">Depth</label>
-                   <input
-                     type="number"
-                     step="0.01"
-                     value={dimensionsEditor.depth}
-                     onChange={(e) => setDimensionsEditor(prev => ({ ...prev, depth: e.target.value }))}
-                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                     placeholder="0"
-                   />
-                 </div>
-               </div>
-               <div>
-                 <label className="block text-xs text-gray-600 mb-1">Unit</label>
-                 <select
-                   value={dimensionsEditor.unit}
-                   onChange={(e) => setDimensionsEditor(prev => ({ ...prev, unit: e.target.value }))}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                 >
-                   <option value="">Select unit</option>
-                   <option value="in">Inches (in)</option>
-                   <option value="cm">Centimeters (cm)</option>
-                   <option value="mm">Millimeters (mm)</option>
-                   <option value="ft">Feet (ft)</option>
-                   <option value="m">Meters (m)</option>
-                   <option value="yd">Yards (yd)</option>
-                 </select>
-               </div>
-             </div>
-           ) : (
-             <input
-               ref={inputRef}
-               type={getFieldType(editingCell.field)}
-               value={editValue}
-               onChange={(e) => setEditValue(e.target.value)}
-               onKeyDown={handleKeyDown}
-               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-               placeholder={editingCell.field === 'cost' ? '0.00' : 'Enter value...'}
-             />
-           )}
-           
-           <div className="flex justify-end space-x-2 mt-3">
-             <button
-               onClick={() => {
-                 setEditingCell(null);
-                 setEditValue('');
-                 setDimensionsEditor({ width: '', height: '', depth: '', unit: '' });
-               }}
-               className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
-             >
-               Cancel
-             </button>
-             <button
-               onClick={handleCellEdit}
-               className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-             >
-               Save
-             </button>
-           </div>
-         </div>
-       )}
-       
-       {/* Item Detail Modal */}
-       {detailModalOpen && selectedItemForDetail && (
-         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-               <h2 className="text-xl font-semibold text-gray-900">
-                 Item Details
-               </h2>
-               <button
-                 onClick={handleCloseDetailModal}
-                 className="text-gray-400 hover:text-gray-600"
-               >
-                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                 </svg>
-               </button>
-             </div>
-             
-             <div className="p-6 space-y-6">
-               {/* Basic Information */}
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                   <div className="text-lg font-semibold text-gray-900">{selectedItemForDetail.name}</div>
-                 </div>
-                 
-                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                   <div className="text-sm text-gray-900 capitalize">{selectedItemForDetail.kind}</div>
-                 </div>
-                 
-                 <div className="md:col-span-2">
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                   <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
-                     {selectedItemForDetail.description || 'No description'}
-                   </div>
-                 </div>
-                 
-                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Cost</label>
-                   <div className="text-lg font-semibold text-green-600">
-                     {selectedItemForDetail.cost ? `$${parseFloat(selectedItemForDetail.cost).toFixed(2)}` : 'N/A'}
-                   </div>
-                 </div>
-                 
-                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-1">Created</label>
-                   <div className="text-sm text-gray-900">
-                     {selectedItemForDetail.createdAt ? new Date(selectedItemForDetail.createdAt).toLocaleDateString() : 'N/A'}
-                   </div>
-                 </div>
-               </div>
-               
-               {/* Categories & Tags */}
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-2">Categories</label>
-                   <div className="flex flex-wrap gap-2">
-                     {selectedItemForDetail.categories && selectedItemForDetail.categories.length > 0 ? (
-                       selectedItemForDetail.categories.map((categoryId) => {
-                         const category = categories.find(cat => cat.id === categoryId);
-                         return (
-                           <span
-                             key={categoryId}
-                             className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"
-                           >
-                             {category ? category.name : categoryId}
-                           </span>
-                         );
-                       })
-                     ) : (
-                       <span className="text-gray-500">No categories</span>
-                     )}
-                   </div>
-                 </div>
-                 
-                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
-                   <div className="flex flex-wrap gap-2">
-                     {selectedItemForDetail.tags && selectedItemForDetail.tags.length > 0 ? (
-                       selectedItemForDetail.tags.map((tag) => (
-                         <span
-                           key={tag}
-                           className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
-                         >
-                           #{tag}
-                         </span>
-                       ))
-                     ) : (
-                       <span className="text-gray-500">No tags</span>
-                     )}
-                   </div>
-                 </div>
-               </div>
-               
-               {/* Dimensions */}
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-2">Dimensions</label>
-                 <div className="bg-gray-50 p-3 rounded-md">
-                   {selectedItemForDetail.dimensions && Object.keys(selectedItemForDetail.dimensions).length > 0 ? (
-                     <div className="text-sm text-gray-900 space-y-2">
-                       {selectedItemForDetail.dimensions.width && (
-                         <div><strong>Width:</strong> {selectedItemForDetail.dimensions.width} {selectedItemForDetail.dimensions.unit}</div>
-                       )}
-                       {selectedItemForDetail.dimensions.height && (
-                         <div><strong>Height:</strong> {selectedItemForDetail.dimensions.height} {selectedItemForDetail.dimensions.unit}</div>
-                       )}
-                       {selectedItemForDetail.dimensions.depth && (
-                         <div><strong>Depth:</strong> {selectedItemForDetail.dimensions.depth} {selectedItemForDetail.dimensions.unit}</div>
-                       )}
-                       {selectedItemForDetail.dimensions.unit && !selectedItemForDetail.dimensions.width && !selectedItemForDetail.dimensions.height && !selectedItemForDetail.dimensions.depth && (
-                         <div><strong>Unit:</strong> {selectedItemForDetail.dimensions.unit}</div>
-                       )}
-                     </div>
-                   ) : (
-                     <span className="text-gray-500">No dimensions specified</span>
-                   )}
-                 </div>
-               </div>
-               
-               {/* Images */}
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-2">Images</label>
-                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                   {selectedItemForDetail.assets && selectedItemForDetail.assets.length > 0 ? (
-                     selectedItemForDetail.assets.map((asset, index) => (
-                       <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                         <img
-                           src={asset.url}
-                           alt={asset.alt || `Image ${index + 1}`}
-                           className="w-full h-full object-cover"
-                         />
-                       </div>
-                     ))
-                   ) : (
-                     <span className="text-gray-500 col-span-full">No images</span>
-                   )}
-                 </div>
-               </div>
-             </div>
-             
-             <div className="flex justify-end p-6 border-t border-gray-200">
-               <button
-                 onClick={handleCloseDetailModal}
-                 className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-               >
-                 Close
-               </button>
-             </div>
-           </div>
-         </div>
-       )}
+        {items.length === 0 && !isAddingNewRow && (
+          <div className="text-center py-8 text-gray-500">
+            No items found. Create your first item to see it in the spreadsheet view.
+          </div>
+        )}
+      </div>
+      
+      {/* Floating Edit Bubble */}
+      {editingCell && (
+        <div
+          className="fixed z-50 bg-white border border-gray-300 rounded-lg shadow-lg p-4 min-w-[300px]"
+          style={{
+            left: `${editPosition.x}px`,
+            top: `${editPosition.y}px`
+          }}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">
+              Edit {editingCell.field}
+            </span>
+            <button
+              onClick={() => {
+                setEditingCell(null);
+                setEditValue('');
+              }}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          {editingCell.field === 'kind' ? (
+            <select
+              ref={inputRef}
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {getAvailableOptions('kind').map(option => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          ) : editingCell.field === 'categories' ? (
+            <select
+              ref={inputRef}
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">No category</option>
+              {getAvailableOptions('categories').map(category => (
+                <option key={category.id} value={category.id}>{category.name}</option>
+              ))}
+            </select>
+          ) : editingCell.field === 'dimensions' ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Width</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={dimensionsEditor.width}
+                    onChange={(e) => setDimensionsEditor(prev => ({ ...prev, width: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Height</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={dimensionsEditor.height}
+                    onChange={(e) => setDimensionsEditor(prev => ({ ...prev, height: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Depth</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={dimensionsEditor.depth}
+                    onChange={(e) => setDimensionsEditor(prev => ({ ...prev, depth: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Unit</label>
+                <select
+                  value={dimensionsEditor.unit}
+                  onChange={(e) => setDimensionsEditor(prev => ({ ...prev, unit: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="">Select unit</option>
+                  <option value="in">Inches (in)</option>
+                  <option value="cm">Centimeters (cm)</option>
+                  <option value="mm">Millimeters (mm)</option>
+                  <option value="ft">Feet (ft)</option>
+                  <option value="m">Meters (m)</option>
+                  <option value="yd">Yards (yd)</option>
+                </select>
+              </div>
+            </div>
+          ) : (
+            <input
+              ref={inputRef}
+              type={getFieldType(editingCell.field)}
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder={editingCell.field === 'cost' ? '0.00' : 'Enter value...'}
+            />
+          )}
+          
+          <div className="flex justify-end space-x-2 mt-3">
+            <button
+              onClick={() => {
+                setEditingCell(null);
+                setEditValue('');
+                setDimensionsEditor({ width: '', height: '', depth: '', unit: '' });
+              }}
+              className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCellEdit}
+              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Item Detail Modal */}
+      {detailModalOpen && selectedItemForDetail && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Item Details
+              </h2>
+              <button
+                onClick={handleCloseDetailModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Basic Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <div className="text-lg font-semibold text-gray-900">{selectedItemForDetail.name}</div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <div className="text-sm text-gray-900 capitalize">{selectedItemForDetail.kind}</div>
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
+                    {selectedItemForDetail.description || 'No description'}
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cost</label>
+                  <div className="text-lg font-semibold text-green-600">
+                    {selectedItemForDetail.cost ? `$${parseFloat(selectedItemForDetail.cost).toFixed(2)}` : 'N/A'}
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Created</label>
+                  <div className="text-sm text-gray-900">
+                    {selectedItemForDetail.createdAt ? new Date(selectedItemForDetail.createdAt).toLocaleDateString() : 'N/A'}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Categories & Tags */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Categories</label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedItemForDetail.categories && selectedItemForDetail.categories.length > 0 ? (
+                      selectedItemForDetail.categories.map((categoryId) => {
+                        const category = categories.find(cat => cat.id === categoryId);
+                        return (
+                          <span
+                            key={categoryId}
+                            className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"
+                          >
+                            {category ? category.name : categoryId}
+                          </span>
+                        );
+                      })
+                    ) : (
+                      <span className="text-gray-500">No categories</span>
+                    )}
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedItemForDetail.tags && selectedItemForDetail.tags.length > 0 ? (
+                      selectedItemForDetail.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
+                        >
+                          #{tag}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-gray-500">No tags</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Dimensions */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Dimensions</label>
+                <div className="bg-gray-50 p-3 rounded-md">
+                  {selectedItemForDetail.dimensions && Object.keys(selectedItemForDetail.dimensions).length > 0 ? (
+                    <div className="text-sm text-gray-900 space-y-2">
+                      {selectedItemForDetail.dimensions.width && (
+                        <div><strong>Width:</strong> {selectedItemForDetail.dimensions.width} {selectedItemForDetail.dimensions.unit}</div>
+                      )}
+                      {selectedItemForDetail.dimensions.height && (
+                        <div><strong>Height:</strong> {selectedItemForDetail.dimensions.height} {selectedItemForDetail.dimensions.unit}</div>
+                      )}
+                      {selectedItemForDetail.dimensions.depth && (
+                        <div><strong>Depth:</strong> {selectedItemForDetail.dimensions.depth} {selectedItemForDetail.dimensions.unit}</div>
+                      )}
+                      {selectedItemForDetail.dimensions.unit && !selectedItemForDetail.dimensions.width && !selectedItemForDetail.dimensions.height && !selectedItemForDetail.dimensions.depth && (
+                        <div><strong>Unit:</strong> {selectedItemForDetail.dimensions.unit}</div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-gray-500">No dimensions specified</span>
+                  )}
+                </div>
+              </div>
+              
+              {/* Images */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Images</label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {selectedItemForDetail.assets && selectedItemForDetail.assets.length > 0 ? (
+                    selectedItemForDetail.assets.map((asset, index) => (
+                      <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                        <img
+                          src={asset.url}
+                          alt={asset.alt || `Image ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <span className="text-gray-500 col-span-full">No images</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end p-6 border-t border-gray-200">
+              <button
+                onClick={handleCloseDetailModal}
+                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Image Manager Modal */}
       {selectedItem && (
@@ -638,6 +884,6 @@ const SpreadsheetView = ({ items, categories = [] }) => {
       )}
     </>
   );
- };
+};
 
 export default SpreadsheetView;

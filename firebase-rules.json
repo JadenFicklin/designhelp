@@ -34,7 +34,16 @@
       "$flashcardId": {
         ".read": "auth != null",
         ".write": "auth != null",
-        ".validate": "newData.hasChildren(['question', 'answer'])"
+        ".validate": "newData.hasChildren(['itemId', 'grade', 'timestamp'])"
+      }
+    },
+    "sessions": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$sessionId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['studyMode', 'totalCards', 'again', 'good', 'easy', 'accuracy', 'duration', 'timestamp'])"
       }
     }
   }

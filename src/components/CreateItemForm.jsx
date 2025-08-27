@@ -93,7 +93,7 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+        className="w-full bg-green-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-green-700 transition-colors text-sm sm:text-base"
       >
         + Create New Item
       </button>
@@ -101,10 +101,10 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Item</h3>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Create New Item</h3>
       
-      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-3 sm:space-y-4">
         {/* Basic Information */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -113,12 +113,12 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
           <input
             type="text"
             {...register('name', { required: 'Name is required' })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             placeholder="Item name"
             disabled={isSubmitting}
           />
           {errors.name && (
-            <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+            <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.name.message}</p>
           )}
         </div>
 
@@ -128,7 +128,7 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
           </label>
           <select
             {...register('kind', { required: 'Type is required' })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             disabled={isSubmitting}
           >
             <option value="">Select type</option>
@@ -137,7 +137,7 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
             <option value="text">Text/Note</option>
           </select>
           {errors.kind && (
-            <p className="text-red-500 text-sm mt-1">{errors.kind.message}</p>
+            <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.kind.message}</p>
           )}
         </div>
 
@@ -148,7 +148,7 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
           <textarea
             {...register('description')}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             placeholder="Item description"
             disabled={isSubmitting}
           />
@@ -164,7 +164,7 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
             accept="image/*"
             onChange={handleImageUpload}
             disabled={isSubmitting || uploadingImage}
-            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+            className="w-full text-xs sm:text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs sm:file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
           />
           {uploadingImage && (
             <p className="text-xs text-blue-600 mt-1">Uploading image...</p>
@@ -179,7 +179,7 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
                   <img 
                     src={image.url} 
                     alt={image.alt || 'Uploaded image'} 
-                    className="w-12 h-12 object-cover rounded"
+                    className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded"
                   />
                   <span className="text-xs text-gray-600 flex-1 truncate">
                     {image.alt || 'Image'}
@@ -207,7 +207,7 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
             type="number"
             step="0.01"
             {...register('cost')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             placeholder="0.00"
             disabled={isSubmitting}
           />
@@ -221,7 +221,7 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
           <select
             {...register('categories')}
             multiple
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             disabled={isSubmitting}
           >
             {categories.map((category) => (
@@ -240,7 +240,7 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
           <input
             type="text"
             {...register('tags')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             placeholder="tag1, tag2, tag3"
             disabled={isSubmitting}
           />
@@ -252,14 +252,14 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
             Dimensions - Optional
           </label>
           <div className="space-y-3">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Width</label>
                 <input
                   type="number"
                   step="0.01"
                   {...register('dimensions.width')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
                   placeholder="0"
                   disabled={isSubmitting}
                 />
@@ -270,7 +270,7 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
                   type="number"
                   step="0.01"
                   {...register('dimensions.height')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
                   placeholder="0"
                   disabled={isSubmitting}
                 />
@@ -281,7 +281,7 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
                   type="number"
                   step="0.01"
                   {...register('dimensions.depth')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
                   placeholder="0"
                   disabled={isSubmitting}
                 />
@@ -291,7 +291,7 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
               <label className="block text-xs text-gray-600 mb-1">Unit</label>
               <select
                 {...register('dimensions.unit')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
                 disabled={isSubmitting}
               >
                 <option value="">Select unit</option>
@@ -309,11 +309,11 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
 
 
         {/* Form Actions */}
-        <div className="flex space-x-2 pt-4">
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 pt-3 sm:pt-4">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
           >
             {isSubmitting ? 'Creating...' : 'Create Item'}
           </button>
@@ -321,7 +321,7 @@ const CreateItemForm = ({ onSubmit, onCancel, categories = [] }) => {
             type="button"
             onClick={handleCancel}
             disabled={isSubmitting}
-            className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-gray-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
           >
             Cancel
           </button>

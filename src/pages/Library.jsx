@@ -163,10 +163,10 @@ const Library = () => {
   };
 
   return (
-    <div className="flex gap-6">
-      {/* Left Sidebar - File Structure */}
-      <div className="w-80 flex-shrink-0">
-        <div className="space-y-6">
+    <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+      {/* Left Sidebar - File Structure - Mobile Responsive */}
+      <div className="w-full lg:w-80 lg:flex-shrink-0 order-2 lg:order-1">
+        <div className="space-y-4 sm:space-y-6">
           {/* Create Item Form */}
           <CreateItemForm
             onSubmit={handleCreateItem}
@@ -174,7 +174,7 @@ const Library = () => {
           />
 
           {/* Search */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Search
             </label>
@@ -183,29 +183,29 @@ const Library = () => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search items..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
             />
           </div>
 
           {/* Categories Tree */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-gray-700">
                 Categories {categoriesLoadingTree ? '(Loading...)' : `(${categoriesTree.length})`}
               </label>
               <button
                 onClick={() => handleAddCategory({ name: 'New Category', parentId: null })}
-                className="text-blue-600 hover:text-blue-700 text-xs"
+                className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm"
                 title="Add root category"
               >
                 +
               </button>
             </div>
-            <div className="max-h-64 overflow-y-auto">
+            <div className="max-h-48 sm:max-h-64 overflow-y-auto">
               {categoriesLoadingTree ? (
-                <div className="text-sm text-gray-500 py-2">Loading categories...</div>
+                <div className="text-xs sm:text-sm text-gray-500 py-2">Loading categories...</div>
                              ) : categoriesTree.length === 0 ? (
-                 <div className="text-sm text-gray-500 py-2">
+                 <div className="text-xs sm:text-sm text-gray-500 py-2">
                    No categories found. Click + to add one.
                  </div>
               ) : (
@@ -223,7 +223,7 @@ const Library = () => {
           </div>
 
           {/* Import/Export */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
             <h3 className="text-sm font-medium text-gray-700 mb-3">
               Data Management
             </h3>
@@ -232,7 +232,7 @@ const Library = () => {
               {/* Export */}
               <button
                 onClick={handleExport}
-                className="bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 transition-colors text-sm"
+                className="bg-green-600 text-white px-2 sm:px-3 py-2 rounded-md hover:bg-green-700 transition-colors text-xs sm:text-sm"
               >
                 Export JSON
               </button>
@@ -240,7 +240,7 @@ const Library = () => {
               {/* Import */}
               <button
                 onClick={() => document.getElementById('import-file').click()}
-                className="bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm"
+                className="bg-blue-600 text-white px-2 sm:px-3 py-2 rounded-md hover:bg-blue-700 transition-colors text-xs sm:text-sm"
               >
                 Import JSON
               </button>
@@ -266,17 +266,17 @@ const Library = () => {
         </div>
       </div>
 
-      {/* Main Content - Items Grid */}
-      <div className="flex-1">
+      {/* Main Content - Items Grid - Mobile Responsive */}
+      <div className="flex-1 order-1 lg:order-2">
                  {/* Header */}
-         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-           <div className="flex items-center justify-between">
-             <div>
-               <h2 className="text-lg font-semibold text-gray-900">
+         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4 sm:mb-6">
+           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+             <div className="mb-3 sm:mb-0">
+               <h2 className="text-base sm:text-lg font-semibold text-gray-900">
                  Library ({items.length} items)
                </h2>
                {(query || selectedCategory || selectedTags.length > 0) && (
-                 <p className="text-sm text-gray-500 mt-1">
+                 <p className="text-xs sm:text-sm text-gray-500 mt-1">
                    Filtered results
                  </p>
                )}
@@ -284,11 +284,11 @@ const Library = () => {
              
              {/* View Mode Toggle */}
              <div className="flex items-center space-x-2">
-               <span className="text-sm text-gray-600">View:</span>
+               <span className="text-xs sm:text-sm text-gray-600">View:</span>
                <div className="flex bg-gray-100 rounded-lg p-1">
                  <button
                    onClick={() => setViewMode('cards')}
-                   className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                   className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md transition-colors ${
                      viewMode === 'cards'
                        ? 'bg-white text-gray-900 shadow-sm'
                        : 'text-gray-600 hover:text-gray-900'
@@ -298,7 +298,7 @@ const Library = () => {
                  </button>
                  <button
                    onClick={() => setViewMode('spreadsheet')}
-                   className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                   className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-md transition-colors ${
                      viewMode === 'spreadsheet'
                        ? 'bg-white text-gray-900 shadow-sm'
                        : 'text-gray-600 hover:text-gray-900'
@@ -313,25 +313,25 @@ const Library = () => {
 
                  {/* Items Display */}
          {itemsLoading ? (
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
              {[...Array(8)].map((_, i) => (
                <div key={i} className="bg-white rounded-lg shadow-sm border border-gray-200 animate-pulse">
-                 <div className="h-48 bg-gray-200 rounded-t-lg"></div>
-                 <div className="p-4 space-y-2">
-                   <div className="h-4 bg-gray-200 rounded"></div>
-                   <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-                   <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+                 <div className="h-32 sm:h-48 bg-gray-200 rounded-t-lg"></div>
+                 <div className="p-3 sm:p-4 space-y-2">
+                   <div className="h-3 sm:h-4 bg-gray-200 rounded"></div>
+                   <div className="h-2 sm:h-3 bg-gray-200 rounded w-3/4"></div>
+                   <div className="h-4 sm:h-6 bg-gray-200 rounded w-1/2"></div>
                  </div>
                </div>
              ))}
            </div>
          ) : items.length === 0 ? (
-           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-             <div className="text-6xl mb-4">📚</div>
-             <h3 className="text-lg font-medium text-gray-900 mb-2">
+           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 sm:p-12 text-center">
+             <div className="text-4xl sm:text-6xl mb-4">📚</div>
+             <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
                No items found
              </h3>
-             <p className="text-gray-500 mb-4">
+             <p className="text-gray-500 mb-4 text-sm sm:text-base">
                {query || selectedCategory || selectedTags.length > 0
                  ? 'Try adjusting your filters or search terms.'
                  : 'Get started by creating your first item.'}
@@ -340,7 +340,7 @@ const Library = () => {
          ) : viewMode === 'spreadsheet' ? (
            <SpreadsheetView items={items} categories={allCategories} />
          ) : (
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
              {items.map((item) => (
                <ItemCard key={item.id} item={item} />
              ))}

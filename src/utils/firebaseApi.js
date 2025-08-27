@@ -549,6 +549,75 @@ export const flashcardsApi = {
       console.error('Error fetching due items:', error);
       throw error;
     }
+  },
+
+  // Save session statistics
+  saveSessionStats: async (sessionData) => {
+    try {
+      const id = generateId();
+      const sessionStats = {
+        ...sessionData,
+        id,
+        createdAt: new Date().toISOString()
+      };
+      
+      await set(ref(database, `sessions/${id}`), sessionStats);
+      return sessionStats;
+    } catch (error) {
+      console.error('Error saving session stats:', error);
+      throw error;
+    }
+  },
+
+  // Get session statistics
+  getSessionStats: async () => {
+    try {
+      const snapshot = await get(ref(database, 'sessions'));
+      const sessions = snapshotToArray(snapshot);
+      
+      // Calculate aggregated stats from all sessions
+      const aggregatedStats = sessions.reduce((acc, session) => {
+        acc.totalSessions++;
+        acc.totalCards += session.totalCards || 0;
+        acc.totalAgain += session.again || 0;
+        acc.totalGood += session.good || 0;
+        acc.totalEasy += session.easy || 0;
+        acc.totalDuration += session.duration || 0;
+        
+        if (session.accuracy) {
+          acc.accuracies.push(session.accuracy);
+        }
+        
+        return acc;
+      }, {
+        totalSessions: 0,
+        totalCards: 0,
+        totalAgain: 0,
+        totalGood: 0,
+        totalEasy: 0,
+        totalDuration: 0,
+        accuracies: []
+      });
+      
+      // Calculate average accuracy
+      aggregatedStats.averageAccuracy = aggregatedStats.accuracies.length > 0
+        ? Math.round(aggregatedStats.accuracies.reduce((sum, acc) => sum + acc, 0) / aggregatedStats.accuracies.length)
+        : 0;
+      
+      // Calculate total accuracy
+      const totalGrades = aggregatedStats.totalAgain + aggregatedStats.totalGood + aggregatedStats.totalEasy;
+      aggregatedStats.totalAccuracy = totalGrades > 0
+        ? Math.round(((aggregatedStats.totalGood + aggregatedStats.totalEasy) / totalGrades) * 100)
+        : 0;
+      
+      return {
+        sessions,
+        aggregated: aggregatedStats
+      };
+    } catch (error) {
+      console.error('Error fetching session stats:', error);
+      throw error;
+    }
   }
 };
 
